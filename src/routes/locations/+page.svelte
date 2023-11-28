@@ -8,6 +8,8 @@
 	let categories = data.categories;
 	let locations = data.locations;
 
+	let filtered = writable([...locations]);
+
 	// Get session (returned from layout)
 	let { session } = data;
 	$: ({ session } = data);
@@ -35,8 +37,93 @@
 			const json = await response.json();
 			locations = json.data;
 		}
-	}
+	};
+
+		//  keep track of sort directions for each col
+		const table_sort = {
+			id: false,
+			name: false,
+			description: false,
+			shared: false,
+			favourite: false
+		};
+		
+
+		// Sort alpha values in a given column
+		function sortAlpha(col) {
+			// reverse current sort direction for this col
+			// i.e. reverse the current order
+			table_sort[col] = !table_sort[col];
+
+			// Update sort icon class
+			updateIcon(col);
+
+			// output to the  browser console
+			console.log(`${col} : ${table_sort[col]}`);
+
+			// sort the products array based on column selected
+			// sort takes a function parameter to indicate which column should be sorted
+			// For JS ternery operator see:
+			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_operator
+			$filtered = $filtered.sort((a, b) => {
+				// sort asc
+				if (table_sort[col] === true) {
+					return a[col].toLowerCase() < b[col].toLowerCase() ? -1 : 1;
+					// sort desc
+				} else {
+					return a[col].toLowerCase() > b[col].toLowerCase() ? -1 : 1;
+				}
+			});
+		};
+
+		// sort numeric and boolean values in a given column
+		function sortNumeric(col) {
+			// reverse current sort direction for this col
+			table_sort[col] = !table_sort[col];
+
+			// Update sort icon class
+			updateIcon(col);
+
+			// check browser console for output
+			// sort takes a function parameter to indicate which column should be sorted
+			console.log(`${col} : ${table_sort[col]}`);
+
+			// sort the products array based on column selected
+			$filtered = $filtered.sort((a, b) => {
+				if (table_sort[col] === true) {
+					return a[col] - b[col];
+				} else {
+					return b[col] - a[col];
+				}
+			});
+		};
 	
+		// Sort alpha values in a given column
+		function sortBool(col) {
+			// reverse current sort direction for this col
+			// i.e. reverse the current order
+			table_sort[col] = !table_sort[col];
+
+			// Update sort icon class
+			updateIcon(col);
+
+			// output to the  browser console
+			console.log(`${col} : ${table_sort[col]}`);
+
+			// sort the products array based on column selected
+			// sort takes a function parameter to indicate which column should be sorted
+			// For JS ternery operator see:
+			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_operator
+			$filtered = $filtered.sort((a, b) => {
+				// sort asc
+				if (table_sort[col] === true) {
+					return a[col] - b[col] ? -1 : 1;
+					// sort desc
+				} else {
+					return a[col] - b[col] ? -1 : 1;
+				}
+			});
+		};
 
 	async function delete_loc(id = 0) {
 		if (confirm(`Permanently deleting product with ID= ${id}\n\nAre you sure?`)) {
@@ -52,6 +139,12 @@
 			filterByCat();
 		}
 	}
+
+	function updateIcon(col){
+		const sortIcon = document.getElementById(col);
+		sortIcon.classList.toggle('bi-sort-down');
+		sortIcon.classList.toggle('bi-sort-up');
+	}
 </script>
 
 <!-- The HTML content of the page-->
@@ -63,7 +156,7 @@
 	</div>
 	{#if categories && locations}
 		<div class="row">
-			<div class="col-sm-2">
+			<div class="col-sm-1">
 				<!-- Page Body Left Column (menu) -->
 				<div id="categories" class="list-group">
 					<button on:click={() => filterByCat(0)} class="list-group-item list-group-item-action">
@@ -81,22 +174,22 @@
 			</div>
 			<!-- End category col -->
 
-			<div class="col-sm-10">
+			<div class="col-sm-11">
 				<!-- Page Body Right Side (Content goes here) -->
 				<div id="locations">
 					<table class="table table-striped table-bordered table-hover">
 						<thead>
 							<tr>
-								<th>id</th>
-								<th>Name</th>
-								<th>Description</th>
+								<th on:click={() => sortNumeric('id')}><i class ="bi bi-sort-down" id='id'></i>id</th>
+								<th on:click={() => sortAlpha('name')}><i class ="bi bi-sort-down" id='name'></i>Name</th>
+								<th on:click={() => sortAlpha('description')}><i class ="bi bi-sort-down" id='description'></i>Description</th>
 								<th>Location (lat, long)</th>
-								<th>Shared</th>
-								<th>Favourite</th>
+								<th on:click={() => sortBool('shared')}><i class ="bi bi-sort-down" id='shared'></i>Shared</th>
+								<th on:click={() => sortBool('favourite')}><i class ="bi bi-sort-down" id='favourite'></i>Favourite</th>
 							</tr>
 						</thead>
 						<tbody>
-							{#each locations as location}
+							{#each $filtered as location}
 								<tr>
 									<td>{location.id}</td>
 									<td>{location.name}</td>
